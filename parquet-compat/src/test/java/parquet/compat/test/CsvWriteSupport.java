@@ -15,6 +15,7 @@
  */
 package parquet.compat.test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -51,8 +52,16 @@ public class CsvWriteSupport extends WriteSupport<List<String>> {
   @Override
   public void write(List<String> values) {
     if (values.size() != cols.size()) {
-      throw new ParquetEncodingException("Invalid input data. Expecting " +
-          cols.size() + " columns. Input had " + values.size() + " columns (" + cols + ") : " + values);
+      // Quick Fix: when diff size = 1, it assumes tailing blank column was omitted.
+      // So, re-add the column with blank value.
+      if (cols.size() - values.size() == 1) {
+        // "values" is fixed-size List, re-instantiation is required for add and/or remove elements.
+        values = new ArrayList<>(values);
+        values.add("");
+      } else {
+        throw new ParquetEncodingException("Invalid input data. Expecting " +
+            cols.size() + " columns. Input had " + values.size() + " columns (" + cols + ") : " + values);
+      }
     }
 
     recordConsumer.startMessage();
